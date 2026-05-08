@@ -362,6 +362,136 @@ svg {
   border: 1px solid var(--line);
 }
 
+.risk-board {
+  display: grid;
+  gap: 14px;
+}
+
+.map-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.map-toolbar div {
+  display: grid;
+  gap: 3px;
+}
+
+.map-toolbar strong {
+  font-size: 22px;
+}
+
+.map-toolbar span,
+.risk-list small {
+  color: var(--muted);
+}
+
+.map-toolbar select {
+  min-height: 44px;
+  padding: 0 14px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font-weight: 950;
+}
+
+.world-map {
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 22% 33%, rgba(8,119,103,.25) 0 10%, transparent 10.5%),
+    radial-gradient(circle at 54% 42%, rgba(8,119,103,.18) 0 16%, transparent 16.5%),
+    radial-gradient(circle at 72% 30%, rgba(8,119,103,.16) 0 12%, transparent 12.5%),
+    radial-gradient(circle at 62% 70%, rgba(8,119,103,.18) 0 13%, transparent 13.5%),
+    linear-gradient(135deg, #d9f1ea, #eff9f5);
+}
+
+.world-grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(8,119,103,.08) 1px, transparent 1px),
+    linear-gradient(rgba(8,119,103,.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.risk-zone {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: transparent;
+}
+
+.risk-zone span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  opacity: .28;
+}
+
+.risk-zone b {
+  z-index: 1;
+  max-width: 120px;
+  padding: 7px 9px;
+  background: rgba(8,32,29,.72);
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.risk-zone.alto span,
+.risk-dot.alto { background: var(--red); }
+.risk-zone.medio span,
+.risk-dot.medio { background: var(--amber); }
+.risk-zone.bajo span,
+.risk-dot.bajo { background: var(--brand); }
+
+.risk-zone::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 6px rgba(255,255,255,.7);
+}
+
+.risk-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.risk-list article {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 13px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.risk-dot {
+  width: 13px;
+  height: 42px;
+  flex: 0 0 13px;
+  border-radius: 999px;
+}
+
 .map-canvas {
   width: 100%;
   height: calc(100vh - 130px);
@@ -810,6 +940,22 @@ svg {
   .map-shell {
     min-height: calc(100dvh - 122px);
     border-radius: 20px;
+  }
+
+  .map-toolbar {
+    display: grid;
+  }
+
+  .map-toolbar select {
+    width: 100%;
+  }
+
+  .world-map {
+    min-height: 430px;
+  }
+
+  .risk-list {
+    grid-template-columns: 1fr;
   }
 
   .map-canvas {

@@ -140,7 +140,7 @@ function render() {
     <div class="app">
       <aside class="rail">
         <button class="rail-brand" data-view="inicio">${icon('logo')}</button>
-        <nav>${nav('inicio', 'home', 'Inicio')}${nav('alertas', 'bell', 'Alertas')}${nav('mapa', 'map', 'Mapa')}${nav('salud', 'health', 'Salud')}${nav('ia', 'bot', 'IA')}</nav>
+        <nav>${nav('inicio', 'home', 'Inicio')}${nav('alertas', 'bell', 'Alertas')}${nav('mapa', 'map', 'Mapa')}${nav('salud', 'health', 'Plan')}${nav('ia', 'bot', 'IA')}</nav>
       </aside>
       <main class="screen">
         <header class="top">
@@ -163,8 +163,8 @@ function title() {
   return {
     inicio: 'Panel',
     alertas: 'Alertas',
-    mapa: 'Mapa real',
-    salud: 'Salud',
+    mapa: 'Mapa de riesgo',
+    salud: 'Plan',
     ia: 'Asistente'
   }[state.view];
 }
@@ -182,12 +182,12 @@ function homePage() {
   return `
     <section class="home-hero">
       <span>Vigilancia sanitaria</span>
-      <strong>Todo claro en menos de un minuto</strong>
-      <p>Alertas oficiales, mapa real, síntomas, centros y asistente sanitario en una experiencia simple.</p>
+      <strong>Qué está pasando y qué debes hacer</strong>
+      <p>La web resume fuentes oficiales, muestra zonas de riesgo, crea un plan personal y te deja preguntar a la IA.</p>
       <div class="hero-status">
         <b>Actualizado</b>
-        <b>${data.alerts.length} fuentes</b>
-        <b>${progress}% prevención</b>
+        <b>${data.alerts.length} fuentes oficiales</b>
+        <b>${progress}% plan listo</b>
       </div>
       <div><button data-view="alertas">Ver alertas</button><button data-view="mapa">Abrir mapa</button></div>
     </section>
@@ -202,11 +202,11 @@ function homePage() {
       <div class="notice-strip">${noticeCards()}</div>
     </section>
     <section class="card compact">
-      <div class="card-head"><h2>Acciones rápidas</h2></div>
+      <div class="card-head"><h2>Por qué usarla</h2></div>
       <div class="action-list">
-        <button data-view="salud" data-health="sintomas">${icon('health')} Revisar síntomas</button>
-        <button data-view="salud" data-health="prevencion">${icon('shield')} Completar checklist</button>
-        <button data-view="ia">${icon('bot')} Preguntar al asistente</button>
+        <button data-view="mapa">${icon('map')} Ver zonas afectadas</button>
+        <button data-view="salud" data-health="plan">${icon('shield')} Recibir plan personal</button>
+        <button data-view="ia">${icon('bot')} Preguntar cualquier duda</button>
       </div>
     </section>
     <section class="card calm-card">
@@ -262,27 +262,43 @@ function alertsPage() {
 function mapPage() {
   const selected = data.countries.find((country) => country.id === state.selectedCountry) || data.countries[0];
   return `
-    <section class="map-shell">
-      <div id="realMap" class="map-canvas"></div>
-      <div class="map-panel">
-        <strong>Mapa global de riesgo</strong>
-        <span>${selected.name}: zonas marcadas por fuentes oficiales o vigilancia configurada.</span>
+    <section class="risk-board">
+      <div class="map-toolbar">
+        <div><strong>${selected.name}</strong><span>Zonas afectadas y fuentes de vigilancia</span></div>
         <select data-country aria-label="Seleccionar país">
           ${data.countries.map((country) => `<option value="${country.id}" ${country.id === state.selectedCountry ? 'selected' : ''}>${country.name}</option>`).join('')}
         </select>
-        <button data-location>${icon('pin')}Mi ubicación</button>
+      </div>
+      <div class="world-map" aria-label="Mapa global de riesgo">
+        <div class="world-grid"></div>
+        ${selected.zones.map(([label, coords, radius, level]) => riskZone(label, coords, radius, level, selected)).join('')}
+      </div>
+      <div class="risk-list">
+        ${selected.zones.map(([label, , , level]) => `<article><span class="risk-dot ${level}"></span><div><strong>${label}</strong><small>Nivel ${level} · revisar fuente oficial</small></div></article>`).join('')}
+      </div>
+      <div class="card compact">
+        <div class="card-head"><h2>Para qué sirve</h2></div>
+        <p>Google te enseña páginas. Esta vista cruza país, fuentes oficiales y acciones recomendadas para que entiendas si debes prevenir, consultar o vigilar.</p>
       </div>
     </section>
   `;
 }
 
+function riskZone(label, coords, radius, level, country) {
+  const [lat, lon] = coords;
+  const x = country.id === 'global' ? ((lon + 180) / 360) * 100 : 50 + (lon - country.center[1]) * 8;
+  const y = country.id === 'global' ? ((90 - lat) / 180) * 100 : 50 - (lat - country.center[0]) * 8;
+  const size = Math.max(34, Math.min(120, radius / (country.id === 'global' ? 26000 : 3500)));
+  return `<button class="risk-zone ${level}" style="left:${x}%;top:${y}%;--size:${size}px" title="${label}"><span></span><b>${label}</b></button>`;
+}
+
 function healthPage() {
   return `
     <div class="segmented">
-      ${healthTab('prevencion', 'Prevención')}
+      ${healthTab('plan', 'Plan')}
       ${healthTab('sintomas', 'Síntomas')}
       ${healthTab('centros', 'Centros')}
-      ${healthTab('curso', 'Curso')}
+      ${healthTab('trabajo', 'Trabajo')}
     </div>
     ${healthContent()}
   `;
@@ -295,15 +311,16 @@ function healthTab(tab, label) {
 function healthContent() {
   if (state.healthTab === 'sintomas') return symptomsPanel();
   if (state.healthTab === 'centros') return centersPanel();
-  if (state.healthTab === 'curso') return coursePanel();
-  return preventionPanel();
+  if (state.healthTab === 'trabajo') return workPanel();
+  return planPanel();
 }
 
-function preventionPanel() {
+function planPanel() {
   const progress = Math.round((state.checks.size / data.prevention.length) * 100);
   return `
     <section class="card">
-      <div class="progress"><div><span>Checklist</span><strong>${progress}%</strong></div><i style="--value:${progress}%"></i></div>
+      <div class="progress"><div><span>Plan personal</span><strong>${progress}% listo</strong></div><i style="--value:${progress}%"></i></div>
+      <p class="hint">Marca solo lo que ya tienes resuelto. El objetivo es saber qué te falta antes de que haya un brote cerca.</p>
       <div class="check-list">
         ${data.prevention.map((item, index) => `<button class="${state.checks.has(index) ? 'done' : ''}" data-check="${index}">${icon(state.checks.has(index) ? 'check' : 'empty')}<span>${item}</span></button>`).join('')}
       </div>
@@ -338,17 +355,17 @@ function centersPanel() {
   `;
 }
 
-function coursePanel() {
+function workPanel() {
   const percent = Math.round((state.lessonsDone.size / data.lessons.length) * 100);
   const lesson = data.lessons[state.selectedLesson] || data.lessons[0];
   return `
     <section class="card">
-      <div class="course-summary"><span>Curso rápido</span><strong>${percent}% completado</strong><p>Formación breve para trabajadores expuestos al público.</p></div>
+      <div class="course-summary"><span>Modo trabajo</span><strong>${percent}% preparado</strong><p>Guía práctica para saber qué hacer en un puesto con atención al público.</p></div>
       <article class="lesson-detail">
-        <span>Módulo ${state.selectedLesson + 1}</span>
+        <span>Paso ${state.selectedLesson + 1}</span>
         <strong>${lesson[0]}</strong>
         <p>${lesson[2]}</p>
-        <button data-lesson="${state.selectedLesson}">${state.lessonsDone.has(state.selectedLesson) ? 'Marcar como pendiente' : 'Completar módulo'}</button>
+        <button data-lesson="${state.selectedLesson}">${state.lessonsDone.has(state.selectedLesson) ? 'Marcar pendiente' : 'Hecho'}</button>
       </article>
       <div class="lesson-list">
         ${data.lessons.map(([title, time], index) => `<button class="${state.lessonsDone.has(index) ? 'done' : ''} ${state.selectedLesson === index ? 'selected' : ''}" data-select-lesson="${index}">${icon(state.lessonsDone.has(index) ? 'check' : 'course')}<span>${title}</span><small>${time}</small></button>`).join('')}
@@ -438,44 +455,7 @@ function bindEvents() {
 }
 
 function afterRender() {
-  if (state.view === 'mapa') initMap();
-}
-
-function initMap() {
-  const node = document.getElementById('realMap');
-  if (!node || !window.L) return;
-  if (mapInstance) mapInstance.remove();
-
-  const selected = data.countries.find((country) => country.id === state.selectedCountry) || data.countries[0];
-  const center = state.userLocation || selected.center;
-  mapInstance = L.map(node, { zoomControl: true, scrollWheelZoom: true }).setView(center, state.userLocation ? 11 : selected.zoom);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(mapInstance);
-
-  selected.zones.forEach(([label, coords, radius, level]) => {
-    const color = level === 'alto' ? '#d94b4b' : level === 'medio' ? '#d88a16' : '#087767';
-    L.circle(coords, { radius, color, fillColor: color, fillOpacity: 0.22 }).addTo(mapInstance).bindPopup(label);
-  });
-  if (selected.id === 'espana') data.centers.forEach((centerData, index) => {
-    L.marker([40.407 + index * 0.012, -3.71 + index * 0.018]).addTo(mapInstance).bindPopup(centerData[0]);
-  });
-  if (state.userLocation) L.marker(state.userLocation).addTo(mapInstance).bindPopup('Tu ubicación aproximada');
-  requestAnimationFrame(refreshMapSize);
-  [120, 300, 700, 1200, 2000].forEach((delay) => setTimeout(refreshMapSize, delay));
-  window.addEventListener('resize', refreshMapSize, { once: true });
-  if ('ResizeObserver' in window) {
-    const observer = new ResizeObserver(refreshMapSize);
-    observer.observe(node);
-    setTimeout(() => observer.disconnect(), 2500);
-  }
-}
-
-function refreshMapSize() {
-  if (!mapInstance) return;
-  mapInstance.invalidateSize({ animate: false, pan: false });
-  const center = state.userLocation || [40.4168, -3.7038];
-  mapInstance.setView(center, mapInstance.getZoom(), { animate: false });
+  return;
 }
 
 function requestLocation() {
