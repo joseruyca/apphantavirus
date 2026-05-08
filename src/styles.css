@@ -389,7 +389,7 @@ svg {
   bottom: 18px;
   z-index: 500;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 4px 12px;
   align-items: center;
   padding: 14px;
@@ -402,6 +402,16 @@ svg {
 .map-panel strong { font-size: 18px; }
 .map-panel span { color: var(--muted); }
 .map-panel button { grid-row: span 2; }
+
+.map-panel select {
+  min-height: 42px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-weight: 900;
+}
 
 .segmented {
   position: sticky;
@@ -542,6 +552,40 @@ svg {
 .lesson-list button {
   display: grid;
   grid-template-columns: auto 1fr auto;
+}
+
+.lesson-list button.selected {
+  outline: 2px solid rgba(8,119,103,.32);
+}
+
+.lesson-detail {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 14px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.lesson-detail span {
+  color: var(--brand);
+  font-weight: 950;
+}
+
+.lesson-detail p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.lesson-detail button {
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 12px;
+  color: #fff;
+  background: var(--brand);
+  border-radius: 12px;
+  font-weight: 950;
 }
 
 .chat-card {
@@ -787,6 +831,10 @@ svg {
   .map-panel button {
     grid-row: auto;
     min-height: 42px;
+  }
+
+  .map-panel select {
+    width: 100%;
   }
 
   .segmented {

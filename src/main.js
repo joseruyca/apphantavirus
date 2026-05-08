@@ -31,6 +31,26 @@ const data = {
       action: 'Consulta brotes confirmados o eventos de interés internacional publicados por la OMS.'
     }
   ],
+  countries: [
+    { id: 'global', name: 'Global', center: [20, 0], zoom: 2, zones: [
+      ['Avisos CDC activos', [12, -60], 1500000, 'medio'],
+      ['Vigilancia OMS', [5, 25], 1800000, 'medio'],
+      ['Seguimiento respiratorio', [45, 12], 900000, 'bajo']
+    ] },
+    { id: 'espana', name: 'España', center: [40.4168, -3.7038], zoom: 6, zones: [
+      ['Madrid · fuente regional', [40.4168, -3.7038], 90000, 'alto'],
+      ['Seguimiento norte', [43.26, -2.93], 120000, 'medio'],
+      ['Vigilancia mediterránea', [39.47, -0.37], 100000, 'bajo']
+    ] },
+    { id: 'bolivia', name: 'Bolivia', center: [-16.29, -63.59], zoom: 5, zones: [
+      ['Chikungunya · aviso CDC', [-17.78, -63.18], 260000, 'medio'],
+      ['Vigilancia amazónica', [-14.83, -64.9], 320000, 'bajo']
+    ] },
+    { id: 'suriname', name: 'Suriname', center: [4.13, -55.91], zoom: 6, zones: [
+      ['Chikungunya · aviso CDC', [5.85, -55.2], 160000, 'medio'],
+      ['Seguimiento interior', [4.4, -56.1], 180000, 'bajo']
+    ] }
+  ],
   prevention: [
     'Activar ubicación aproximada',
     'Revisar vacunas y medicación',
@@ -53,10 +73,10 @@ const data = {
     ['Punto de Vacunación', 'Cita previa', '1.4 km', 'Mañana', false]
   ],
   lessons: [
-    ['Señales tempranas de brote', '8 min'],
-    ['Medidas en el trabajo', '10 min'],
-    ['Comunicación a ciudadanía', '7 min'],
-    ['Derivación segura', '9 min']
+    ['Señales tempranas de brote', '8 min', 'Aprende a reconocer patrones, aumento de síntomas y cuándo reportar una posible alerta.'],
+    ['Medidas en el trabajo', '10 min', 'Ventilación, higiene, comunicación interna y protección de personas vulnerables.'],
+    ['Comunicación a ciudadanía', '7 min', 'Mensajes breves, claros y sin alarmismo para personas no técnicas.'],
+    ['Derivación segura', '9 min', 'Cuándo recomendar urgencias, atención primaria o vigilancia en casa.']
   ],
   sources: [
     ['Madrid Salud Pública', 'https://www.comunidad.madrid/salud/alertas-salud-publica'],
@@ -69,6 +89,8 @@ const state = {
   view: 'inicio',
   healthTab: 'prevencion',
   selectedAlert: 'madrid',
+  selectedCountry: 'global',
+  selectedLesson: 0,
   checks: new Set([0, 2]),
   symptoms: new Set(),
   lessonsDone: new Set([0]),
@@ -238,13 +260,17 @@ function alertsPage() {
 }
 
 function mapPage() {
+  const selected = data.countries.find((country) => country.id === state.selectedCountry) || data.countries[0];
   return `
     <section class="map-shell">
       <div id="realMap" class="map-canvas"></div>
       <div class="map-panel">
-        <strong>Mapa real</strong>
-        <span>OpenStreetMap con centros y zonas de referencia.</span>
-        <button data-location>${icon('pin')}Centrar en mi ubicación</button>
+        <strong>Mapa global de riesgo</strong>
+        <span>${selected.name}: zonas marcadas por fuentes oficiales o vigilancia configurada.</span>
+        <select data-country aria-label="Seleccionar país">
+          ${data.countries.map((country) => `<option value="${country.id}" ${country.id === state.selectedCountry ? 'selected' : ''}>${country.name}</option>`).join('')}
+        </select>
+        <button data-location>${icon('pin')}Mi ubicación</button>
       </div>
     </section>
   `;
@@ -314,11 +340,18 @@ function centersPanel() {
 
 function coursePanel() {
   const percent = Math.round((state.lessonsDone.size / data.lessons.length) * 100);
+  const lesson = data.lessons[state.selectedLesson] || data.lessons[0];
   return `
     <section class="card">
       <div class="course-summary"><span>Curso rápido</span><strong>${percent}% completado</strong><p>Formación breve para trabajadores expuestos al público.</p></div>
+      <article class="lesson-detail">
+        <span>Módulo ${state.selectedLesson + 1}</span>
+        <strong>${lesson[0]}</strong>
+        <p>${lesson[2]}</p>
+        <button data-lesson="${state.selectedLesson}">${state.lessonsDone.has(state.selectedLesson) ? 'Marcar como pendiente' : 'Completar módulo'}</button>
+      </article>
       <div class="lesson-list">
-        ${data.lessons.map(([title, time], index) => `<button class="${state.lessonsDone.has(index) ? 'done' : ''}" data-lesson="${index}">${icon(state.lessonsDone.has(index) ? 'check' : 'course')}<span>${title}</span><small>${time}</small></button>`).join('')}
+        ${data.lessons.map(([title, time], index) => `<button class="${state.lessonsDone.has(index) ? 'done' : ''} ${state.selectedLesson === index ? 'selected' : ''}" data-select-lesson="${index}">${icon(state.lessonsDone.has(index) ? 'check' : 'course')}<span>${title}</span><small>${time}</small></button>`).join('')}
       </div>
     </section>
   `;
@@ -375,6 +408,15 @@ function bindEvents() {
     state.lessonsDone.has(index) ? state.lessonsDone.delete(index) : state.lessonsDone.add(index);
     render();
   }));
+  document.querySelectorAll('[data-select-lesson]').forEach((item) => item.addEventListener('click', () => {
+    state.selectedLesson = Number(item.dataset.selectLesson);
+    render();
+  }));
+  const country = document.querySelector('[data-country]');
+  if (country) country.addEventListener('change', (event) => {
+    state.selectedCountry = event.target.value;
+    render();
+  });
   document.querySelectorAll('[data-prompt]').forEach((item) => item.addEventListener('click', () => {
     state.chatInput = item.dataset.prompt;
     render();
@@ -404,15 +446,18 @@ function initMap() {
   if (!node || !window.L) return;
   if (mapInstance) mapInstance.remove();
 
-  const center = state.userLocation || [40.4168, -3.7038];
-  mapInstance = L.map(node, { zoomControl: true, scrollWheelZoom: true }).setView(center, 12);
+  const selected = data.countries.find((country) => country.id === state.selectedCountry) || data.countries[0];
+  const center = state.userLocation || selected.center;
+  mapInstance = L.map(node, { zoomControl: true, scrollWheelZoom: true }).setView(center, state.userLocation ? 11 : selected.zoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap'
   }).addTo(mapInstance);
 
-  L.marker([40.4168, -3.7038]).addTo(mapInstance).bindPopup('Madrid · fuente regional');
-  L.circle([40.43, -3.70], { radius: 1800, color: '#d94b4b', fillColor: '#d94b4b', fillOpacity: 0.22 }).addTo(mapInstance).bindPopup('Zona de referencia');
-  data.centers.forEach((centerData, index) => {
+  selected.zones.forEach(([label, coords, radius, level]) => {
+    const color = level === 'alto' ? '#d94b4b' : level === 'medio' ? '#d88a16' : '#087767';
+    L.circle(coords, { radius, color, fillColor: color, fillOpacity: 0.22 }).addTo(mapInstance).bindPopup(label);
+  });
+  if (selected.id === 'espana') data.centers.forEach((centerData, index) => {
     L.marker([40.407 + index * 0.012, -3.71 + index * 0.018]).addTo(mapInstance).bindPopup(centerData[0]);
   });
   if (state.userLocation) L.marker(state.userLocation).addTo(mapInstance).bindPopup('Tu ubicación aproximada');
@@ -453,13 +498,6 @@ function requestLocation() {
 async function sendMessage() {
   const prompt = state.chatInput.trim();
   if (!prompt) return;
-  if (!isHealthRelated(prompt)) {
-    state.messages.push(['user', prompt], ['bot', 'Solo puedo ayudarte con alertas sanitarias, brotes, prevención, síntomas, centros de salud y protocolos laborales. Reformula tu pregunta dentro de ese tema.']);
-    state.chatInput = '';
-    state.aiStatus = 'Tema fuera del asistente sanitario';
-    render();
-    return;
-  }
   state.messages.push(['user', prompt], ['bot', 'Consultando...']);
   state.chatInput = '';
   render();
@@ -479,25 +517,24 @@ async function sendMessage() {
   render();
 }
 
-function isHealthRelated(prompt) {
-  const text = prompt.toLowerCase();
-  return [
-    'salud', 'brote', 'alerta', 'riesgo', 'zona', 'fiebre', 'tos', 'respirar', 'pecho', 'confusión',
-    'síntoma', 'sintoma', 'vacuna', 'prevención', 'prevencion', 'centro', 'hospital', 'urgencia',
-    'trabajo', 'empresa', 'protocolo', 'hantavirus', 'virus', 'contagio', 'infección', 'infeccion',
-    'diarrea', 'vómito', 'vomito', 'mascarilla', 'repelente', 'viaje'
-  ].some((word) => text.includes(word));
-}
-
 function fallbackAnswer(prompt) {
   const lower = prompt.toLowerCase();
+  if (lower.includes('api')) {
+    return 'Una API es una forma ordenada para que dos aplicaciones se comuniquen y compartan datos o funciones.';
+  }
+  if (lower.includes('hola') || lower.includes('buenas')) {
+    return 'Hola. Puedo ayudarte con dudas generales y, si el tema es sanitario, responderé con prudencia y señales de alarma.';
+  }
   if (lower.includes('respirar') || lower.includes('pecho') || lower.includes('urgencia')) {
     return 'Si hay dificultad para respirar, dolor en pecho, confusión o empeoramiento rápido, busca atención sanitaria urgente.';
+  }
+  if (lower.includes('tripa') || lower.includes('barriga') || lower.includes('estómago') || lower.includes('estomago') || lower.includes('diarrea') || lower.includes('vómit') || lower.includes('vomit')) {
+    return 'El dolor de tripa puede tener muchas causas. Vigila intensidad, fiebre, vómitos persistentes, diarrea con sangre, deshidratación o dolor fuerte localizado. Si aparece alguna de esas señales, consulta con un centro sanitario.';
   }
   if (lower.includes('brote') || lower.includes('zona')) {
     return 'Reduce exposición, revisa fuentes oficiales y consulta si aparecen síntomas o perteneces a un grupo vulnerable.';
   }
-  return 'Puedo ayudarte con prevención, síntomas, centros cercanos y pasos a seguir. Esta orientación no sustituye una valoración médica.';
+  return 'Puedo ayudarte con esa duda. Si quieres una respuesta más precisa, dame un poco más de contexto.';
 }
 
 async function loadNotices(manual = false) {

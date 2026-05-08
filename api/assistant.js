@@ -13,14 +13,6 @@ export default async function handler(request, response) {
     return;
   }
 
-  if (!isHealthRelated(prompt)) {
-    response.status(200).json({
-      mode: 'guardrail',
-      answer: 'Solo puedo ayudarte con alertas sanitarias, brotes, prevención, síntomas, centros de salud y protocolos laborales. Reformula tu pregunta dentro de ese tema.'
-    });
-    return;
-  }
-
   if (!key) {
     response.status(200).json({
       mode: 'demo',
@@ -41,9 +33,10 @@ export default async function handler(request, response) {
         store: false,
         instructions: [
           'Eres un asistente ciudadano de salud pública para una web de alertas tempranas.',
+          'También puedes responder preguntas generales como asistente web.',
           'Responde en español claro, con tono sereno, práctico y no alarmista.',
           'No diagnostiques. No sustituyas a profesionales sanitarios.',
-          'Si la pregunta no está relacionada con salud pública, brotes, prevención, síntomas, centros sanitarios o protocolos laborales, rechaza brevemente y pide una pregunta relacionada.',
+          'Si el tema es sanitario, responde con prudencia, explica señales de alarma y recomienda valoración profesional cuando corresponda.',
           'Ante señales de alarma recomienda contactar con urgencias o servicios sanitarios.',
           `Contexto de la plataforma: ${JSON.stringify(context)}`
         ].join('\n'),
@@ -66,20 +59,19 @@ export default async function handler(request, response) {
   }
 }
 
-function isHealthRelated(prompt) {
-  const text = prompt.toLowerCase();
-  return [
-    'salud', 'brote', 'alerta', 'riesgo', 'zona', 'fiebre', 'tos', 'respirar', 'pecho', 'confusión',
-    'síntoma', 'sintoma', 'vacuna', 'prevención', 'prevencion', 'centro', 'hospital', 'urgencia',
-    'trabajo', 'empresa', 'protocolo', 'hantavirus', 'virus', 'contagio', 'infección', 'infeccion',
-    'diarrea', 'vómito', 'vomito', 'mascarilla', 'repelente', 'viaje'
-  ].some((word) => text.includes(word));
-}
-
 function fallbackAnswer(prompt) {
   const lower = prompt.toLowerCase();
+  if (lower.includes('api')) {
+    return 'Una API es una forma ordenada para que dos aplicaciones se comuniquen y compartan datos o funciones.';
+  }
+  if (lower.includes('hola') || lower.includes('buenas')) {
+    return 'Hola. Puedo ayudarte con dudas generales y, si el tema es sanitario, responderé con prudencia y señales de alarma.';
+  }
   if (lower.includes('respirar') || lower.includes('pecho') || lower.includes('confusión') || lower.includes('urgencia')) {
     return 'Si hay dificultad para respirar, dolor en pecho, confusión, empeoramiento rápido o fiebre persistente, busca atención sanitaria urgente. Ten preparada la duración de síntomas, medicación y posibles contactos de riesgo.';
+  }
+  if (lower.includes('tripa') || lower.includes('barriga') || lower.includes('estómago') || lower.includes('estomago') || lower.includes('diarrea') || lower.includes('vómit') || lower.includes('vomit')) {
+    return 'El dolor de tripa puede tener muchas causas. Vigila intensidad, fiebre, vómitos persistentes, diarrea con sangre, deshidratación o dolor fuerte localizado. Si aparece alguna de esas señales, consulta con un centro sanitario.';
   }
   if (lower.includes('brote') || lower.includes('zona')) {
     return 'Si estás cerca de una zona de riesgo, reduce exposición, revisa alertas oficiales, usa medidas preventivas y consulta si perteneces a un grupo vulnerable o aparecen síntomas compatibles.';
@@ -87,5 +79,5 @@ function fallbackAnswer(prompt) {
   if (lower.includes('trabajo') || lower.includes('empresa')) {
     return 'En el trabajo conviene comunicar síntomas, evitar acudir si hay fiebre o exposición relevante, ventilar espacios, reforzar higiene y seguir el protocolo interno de prevención.';
   }
-  return 'Puedo ayudarte con prevención, síntomas, derivación a centros, brotes recientes y protocolos laborales. Esta orientación no sustituye una valoración médica.';
+  return 'Puedo ayudarte con esa duda. Si quieres una respuesta más precisa, dame un poco más de contexto.';
 }
