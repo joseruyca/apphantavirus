@@ -116,13 +116,25 @@ async function handleAssistant(request, response) {
     });
     const result = await openai.json();
     if (!openai.ok) throw new Error(result.error?.message || 'OpenAI error');
-    sendJson(response, 200, { mode: 'openai', answer: result.output_text || 'No he podido generar una respuesta.' });
+    sendJson(response, 200, { mode: 'openai', answer: extractText(result) || fallbackAnswer(prompt) });
   } catch (error) {
     sendJson(response, 200, {
       mode: 'fallback',
-      answer: `${fallbackAnswer(prompt)}\n\nNota técnica: no se pudo conectar con OpenAI en este momento.`
+      answer: `${fallbackAnswer(prompt)}\n\nNota: la IA real no respondió ahora mismo. Revisa que OPENAI_API_KEY y OPENAI_MODEL estén bien configurados.`
     });
   }
+}
+
+function extractText(result) {
+  if (result?.output_text) return result.output_text;
+  const chunks = [];
+  for (const item of result?.output || []) {
+    for (const content of item?.content || []) {
+      if (content?.text) chunks.push(content.text);
+      if (content?.type === 'output_text' && content?.text) chunks.push(content.text);
+    }
+  }
+  return chunks.join('\n').trim();
 }
 
 function fallbackAnswer(prompt) {
