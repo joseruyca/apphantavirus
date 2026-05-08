@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/notices",
+      "destination": "/api/notices.js"
+    },
+    {
+      "source": "/api/assistant",
+      "destination": "/api/assistant.js"
+    }
+  ]
+}

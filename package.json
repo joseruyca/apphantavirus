@@ -6,6 +6,6 @@
   "scripts": {
     "dev": "node dev-server.mjs",
     "check": "node --check src/main.js",
-    "build": "node --check src/main.js && node --check dev-server.mjs"
+    "build": "node --check src/main.js && node --check dev-server.mjs && node --check api/notices.js && node --check api/assistant.js"
   }
 }
