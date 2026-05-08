@@ -13,6 +13,14 @@ export default async function handler(request, response) {
     return;
   }
 
+  if (!isHealthRelated(prompt)) {
+    response.status(200).json({
+      mode: 'guardrail',
+      answer: 'Solo puedo ayudarte con alertas sanitarias, brotes, prevención, síntomas, centros de salud y protocolos laborales. Reformula tu pregunta dentro de ese tema.'
+    });
+    return;
+  }
+
   if (!key) {
     response.status(200).json({
       mode: 'demo',
@@ -35,6 +43,7 @@ export default async function handler(request, response) {
           'Eres un asistente ciudadano de salud pública para una web de alertas tempranas.',
           'Responde en español claro, con tono sereno, práctico y no alarmista.',
           'No diagnostiques. No sustituyas a profesionales sanitarios.',
+          'Si la pregunta no está relacionada con salud pública, brotes, prevención, síntomas, centros sanitarios o protocolos laborales, rechaza brevemente y pide una pregunta relacionada.',
           'Ante señales de alarma recomienda contactar con urgencias o servicios sanitarios.',
           `Contexto de la plataforma: ${JSON.stringify(context)}`
         ].join('\n'),
@@ -55,6 +64,16 @@ export default async function handler(request, response) {
       answer: `${fallbackAnswer(prompt)}\n\nNota técnica: no se pudo conectar con OpenAI en este momento.`
     });
   }
+}
+
+function isHealthRelated(prompt) {
+  const text = prompt.toLowerCase();
+  return [
+    'salud', 'brote', 'alerta', 'riesgo', 'zona', 'fiebre', 'tos', 'respirar', 'pecho', 'confusión',
+    'síntoma', 'sintoma', 'vacuna', 'prevención', 'prevencion', 'centro', 'hospital', 'urgencia',
+    'trabajo', 'empresa', 'protocolo', 'hantavirus', 'virus', 'contagio', 'infección', 'infeccion',
+    'diarrea', 'vómito', 'vomito', 'mascarilla', 'repelente', 'viaje'
+  ].some((word) => text.includes(word));
 }
 
 function fallbackAnswer(prompt) {

@@ -338,6 +338,17 @@ svg {
   z-index: 1;
 }
 
+.map-canvas .leaflet-container,
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #dcefe9;
+}
+
+.leaflet-container img {
+  max-width: none;
+}
+
 .map-panel {
   position: absolute;
   left: 18px;

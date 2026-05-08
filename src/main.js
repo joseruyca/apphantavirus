@@ -397,7 +397,22 @@ function initMap() {
     L.marker([40.407 + index * 0.012, -3.71 + index * 0.018]).addTo(mapInstance).bindPopup(centerData[0]);
   });
   if (state.userLocation) L.marker(state.userLocation).addTo(mapInstance).bindPopup('Tu ubicación aproximada');
-  setTimeout(() => mapInstance?.invalidateSize(), 200);
+  refreshMapSize();
+  setTimeout(refreshMapSize, 150);
+  setTimeout(refreshMapSize, 500);
+  setTimeout(refreshMapSize, 1000);
+  if ('ResizeObserver' in window) {
+    const observer = new ResizeObserver(refreshMapSize);
+    observer.observe(node);
+    setTimeout(() => observer.disconnect(), 2500);
+  }
+}
+
+function refreshMapSize() {
+  if (!mapInstance) return;
+  mapInstance.invalidateSize({ animate: false, pan: false });
+  const center = state.userLocation || [40.4168, -3.7038];
+  mapInstance.setView(center, mapInstance.getZoom(), { animate: false });
 }
 
 function requestLocation() {
@@ -420,6 +435,13 @@ function requestLocation() {
 async function sendMessage() {
   const prompt = state.chatInput.trim();
   if (!prompt) return;
+  if (!isHealthRelated(prompt)) {
+    state.messages.push(['user', prompt], ['bot', 'Solo puedo ayudarte con alertas sanitarias, brotes, prevención, síntomas, centros de salud y protocolos laborales. Reformula tu pregunta dentro de ese tema.']);
+    state.chatInput = '';
+    state.aiStatus = 'Tema fuera del asistente sanitario';
+    render();
+    return;
+  }
   state.messages.push(['user', prompt], ['bot', 'Consultando...']);
   state.chatInput = '';
   render();
@@ -437,6 +459,16 @@ async function sendMessage() {
     state.aiStatus = 'Respuesta orientativa';
   }
   render();
+}
+
+function isHealthRelated(prompt) {
+  const text = prompt.toLowerCase();
+  return [
+    'salud', 'brote', 'alerta', 'riesgo', 'zona', 'fiebre', 'tos', 'respirar', 'pecho', 'confusión',
+    'síntoma', 'sintoma', 'vacuna', 'prevención', 'prevencion', 'centro', 'hospital', 'urgencia',
+    'trabajo', 'empresa', 'protocolo', 'hantavirus', 'virus', 'contagio', 'infección', 'infeccion',
+    'diarrea', 'vómito', 'vomito', 'mascarilla', 'repelente', 'viaje'
+  ].some((word) => text.includes(word));
 }
 
 function fallbackAnswer(prompt) {
