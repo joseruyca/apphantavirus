@@ -1,9 +1,9 @@
 const appData = {
   hotspots: [
-    { id: 'global', label: 'Global', risk: 'medio', headline: 'Vigilancia internacional activa', detail: 'Avisos CDC/OMS y seguimiento de eventos sanitarios emergentes.', x: 52, y: 42 },
-    { id: 'espana', label: 'España', risk: 'bajo', headline: 'Sin foco crítico configurado', detail: 'Consulta fuentes autonómicas y nacionales antes de viajar o reportar exposición.', x: 48, y: 34 },
-    { id: 'bolivia', label: 'Bolivia', risk: 'medio', headline: 'Aviso sanitario internacional', detail: 'Zona incluida como ejemplo de vigilancia por avisos internacionales recientes.', x: 36, y: 66 },
-    { id: 'suriname', label: 'Suriname', risk: 'medio', headline: 'Seguimiento de arbovirosis', detail: 'Área marcada por avisos de viaje y vigilancia epidemiológica internacional.', x: 42, y: 56 }
+    { id: 'global', label: 'Global', risk: 'medio', source: 'CDC/OMS', headline: 'Vigilancia internacional activa', detail: 'Avisos de viaje y eventos sanitarios emergentes publicados por fuentes oficiales.', action: 'Revisa destino, fecha y medidas preventivas antes de viajar.' },
+    { id: 'espana', label: 'España', risk: 'bajo', source: 'Fuentes autonómicas', headline: 'Sin foco crítico configurado', detail: 'Seguimiento preventivo con fuentes regionales y nacionales.', action: 'Consulta salud pública local si hay exposición o síntomas.' },
+    { id: 'bolivia', label: 'Bolivia', risk: 'medio', source: 'CDC Travel', headline: 'Aviso sanitario internacional', detail: 'Zona incluida por avisos internacionales recientes.', action: 'Evita exposición, revisa vacunas/medidas y consulta si aparecen síntomas.' },
+    { id: 'suriname', label: 'Suriname', risk: 'medio', source: 'CDC Travel', headline: 'Seguimiento de arbovirosis', detail: 'Área marcada por vigilancia epidemiológica internacional.', action: 'Usa medidas preventivas frente a vectores y revisa avisos oficiales.' }
   ],
   riskQuestions: [
     ['exposure', 'He limpiado polvo, almacenes, graneros o zonas con roedores', 4],
@@ -77,7 +77,7 @@ function render() {
       <aside class="nav">
         <div class="brand"><span>H</span><strong>HantaWatch</strong></div>
         ${nav('inicio', 'home', 'Inicio')}
-        ${nav('radar', 'radar', 'Radar')}
+        ${nav('radar', 'radar', 'Focos')}
         ${nav('riesgo', 'pulse', 'Riesgo')}
         ${nav('protocolo', 'shield', 'Protocolo')}
         ${nav('ia', 'bot', 'IA')}
@@ -131,20 +131,27 @@ function homePage() {
 
 function radarPage() {
   const selected = appData.hotspots.find((item) => item.id === state.selectedHotspot) || appData.hotspots[0];
+  const visible = appData.hotspots;
   return `
     <section class="page-head">
-      <div><p>Radar sanitario</p><h1>Focos y vigilancia</h1></div>
+      <div><p>Focos sanitarios</p><h1>Alertas que importan</h1></div>
       <select data-hotspot-select>${appData.hotspots.map((item) => `<option value="${item.id}" ${item.id === selected.id ? 'selected' : ''}>${item.label}</option>`).join('')}</select>
     </section>
-    <section class="radar-layout">
-      <div class="radar-map">
-        <div class="map-texture"></div>
-        ${appData.hotspots.map((item) => `<button class="hotspot ${item.risk} ${item.id === selected.id ? 'selected' : ''}" style="left:${item.x}%;top:${item.y}%" data-hotspot="${item.id}"><i></i><span>${item.label}</span></button>`).join('')}
+    <section class="focus-layout">
+      <div class="focus-list">
+        ${visible.map((item) => `
+          <button class="focus-item ${item.risk} ${item.id === selected.id ? 'selected' : ''}" data-hotspot="${item.id}">
+            <span>${item.risk}</span>
+            <div><strong>${item.label}</strong><small>${item.headline}</small></div>
+            <b>${item.source}</b>
+          </button>
+        `).join('')}
       </div>
       <aside class="insight">
         <span class="pill ${selected.risk}">${selected.risk}</span>
         <h2>${selected.headline}</h2>
         <p>${selected.detail}</p>
+        <div class="action-box"><strong>Acción recomendada</strong><span>${selected.action}</span></div>
         <button data-view="protocolo">Qué hago ahora</button>
       </aside>
     </section>
