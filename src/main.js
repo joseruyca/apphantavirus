@@ -159,9 +159,14 @@ function homePage() {
   const progress = Math.round((state.checks.size / data.prevention.length) * 100);
   return `
     <section class="home-hero">
-      <span>Riesgo local</span>
-      <strong>Vigilancia activa</strong>
-      <p>Alertas oficiales, mapa, síntomas, centros y formación en una experiencia móvil clara.</p>
+      <span>Vigilancia sanitaria</span>
+      <strong>Todo claro en menos de un minuto</strong>
+      <p>Alertas oficiales, mapa real, síntomas, centros y asistente sanitario en una experiencia simple.</p>
+      <div class="hero-status">
+        <b>Actualizado</b>
+        <b>${data.alerts.length} fuentes</b>
+        <b>${progress}% prevención</b>
+      </div>
       <div><button data-view="alertas">Ver alertas</button><button data-view="mapa">Abrir mapa</button></div>
     </section>
     <section class="quick-grid">
@@ -181,6 +186,11 @@ function homePage() {
         <button data-view="salud" data-health="prevencion">${icon('shield')} Completar checklist</button>
         <button data-view="ia">${icon('bot')} Preguntar al asistente</button>
       </div>
+    </section>
+    <section class="card calm-card">
+      <strong>Señales de alarma</strong>
+      <p>Dificultad para respirar, dolor en pecho, confusión, empeoramiento rápido o fiebre persistente requieren atención sanitaria.</p>
+      <button data-view="salud" data-health="sintomas">Evaluar síntomas</button>
     </section>
   `;
 }
@@ -318,13 +328,17 @@ function aiPage() {
   return `
     <section class="card chat-card">
       <div class="assistant-head">${icon('bot')}<div><span>Asistente ciudadano</span><strong>Pregunta en lenguaje natural</strong></div></div>
+      <p class="assistant-note">Responde solo sobre alertas sanitarias, brotes, prevención, síntomas, centros y protocolos laborales.</p>
       <div class="quick-prompts">
         <button data-prompt="Tengo fiebre y estoy en una zona de riesgo">Tengo fiebre</button>
         <button data-prompt="¿Cuándo debo ir a urgencias?">Urgencias</button>
         <button data-prompt="¿Qué hago en el trabajo si hay un brote?">Trabajo</button>
       </div>
       <div class="chat">${state.messages.map(([role, text]) => `<div class="bubble ${role}">${escapeHtml(text)}</div>`).join('')}</div>
-      <label class="composer"><input value="${escapeHtml(state.chatInput)}" placeholder="Escribe tu pregunta" aria-label="Pregunta para el asistente" /><button data-send>${icon('arrow')}</button></label>
+      <form class="composer" data-chat-form>
+        <textarea rows="1" placeholder="Escribe tu pregunta" aria-label="Pregunta para el asistente">${escapeHtml(state.chatInput)}</textarea>
+        <button type="submit" data-send>${icon('arrow')}</button>
+      </form>
       <p class="hint">${state.aiStatus}</p>
     </section>
   `;
@@ -365,12 +379,17 @@ function bindEvents() {
     state.chatInput = item.dataset.prompt;
     render();
   }));
-  const input = document.querySelector('.composer input');
+  const input = document.querySelector('.composer textarea');
   if (input) input.addEventListener('input', (event) => {
     state.chatInput = event.target.value;
+    event.target.style.height = 'auto';
+    event.target.style.height = `${Math.min(event.target.scrollHeight, 110)}px`;
   });
-  const send = document.querySelector('[data-send]');
-  if (send) send.addEventListener('click', sendMessage);
+  const form = document.querySelector('[data-chat-form]');
+  if (form) form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    sendMessage();
+  });
   document.querySelectorAll('[data-location]').forEach((item) => item.addEventListener('click', requestLocation));
   const refresh = document.querySelector('[data-refresh-notices]');
   if (refresh) refresh.addEventListener('click', () => loadNotices(true));
@@ -397,10 +416,9 @@ function initMap() {
     L.marker([40.407 + index * 0.012, -3.71 + index * 0.018]).addTo(mapInstance).bindPopup(centerData[0]);
   });
   if (state.userLocation) L.marker(state.userLocation).addTo(mapInstance).bindPopup('Tu ubicación aproximada');
-  refreshMapSize();
-  setTimeout(refreshMapSize, 150);
-  setTimeout(refreshMapSize, 500);
-  setTimeout(refreshMapSize, 1000);
+  requestAnimationFrame(refreshMapSize);
+  [120, 300, 700, 1200, 2000].forEach((delay) => setTimeout(refreshMapSize, delay));
+  window.addEventListener('resize', refreshMapSize, { once: true });
   if ('ResizeObserver' in window) {
     const observer = new ResizeObserver(refreshMapSize);
     observer.observe(node);

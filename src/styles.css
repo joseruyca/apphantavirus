@@ -171,6 +171,15 @@ svg {
   flex-wrap: wrap;
 }
 
+.hero-status b {
+  padding: 7px 10px;
+  color: #eafff8;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
 .home-hero button + button {
   background: rgba(255,255,255,.18);
   border: 1px solid rgba(255,255,255,.28);
@@ -269,6 +278,28 @@ svg {
   font-weight: 950;
 }
 
+.calm-card {
+  display: grid;
+  gap: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, #195a79, #087767);
+}
+
+.calm-card p {
+  margin: 0;
+  color: rgba(255,255,255,.84);
+}
+
+.calm-card button {
+  width: fit-content;
+  min-height: 42px;
+  padding: 0 13px;
+  color: var(--brand);
+  background: #fff;
+  border-radius: 12px;
+  font-weight: 950;
+}
+
 .alert-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -336,6 +367,8 @@ svg {
   height: calc(100vh - 130px);
   min-height: 560px;
   z-index: 1;
+  position: relative;
+  overflow: hidden;
 }
 
 .map-canvas .leaflet-container,
@@ -517,6 +550,11 @@ svg {
   flex-direction: column;
 }
 
+.assistant-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+
 .quick-prompts {
   display: flex;
   gap: 8px;
@@ -574,18 +612,22 @@ svg {
   border-radius: 18px;
 }
 
-.composer input {
+.composer textarea {
   min-width: 0;
   flex: 1;
   border: 0;
   outline: 0;
   background: transparent;
   padding: 0 8px;
+  resize: none;
+  line-height: 1.35;
+  max-height: 110px;
 }
 
 .composer button {
   width: 46px;
   padding: 0;
+  flex: 0 0 46px;
 }
 
 @media (max-width: 760px) {
@@ -663,6 +705,11 @@ svg {
 
   .home-hero p {
     font-size: 14px;
+  }
+
+  .hero-status b {
+    font-size: 11px;
+    padding: 6px 8px;
   }
 
   .home-hero button {
