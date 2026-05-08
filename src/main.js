@@ -100,12 +100,11 @@ const state = {
   notices: [],
   noticesStatus: 'Cargando avisos oficiales...',
   noticesUpdatedAt: null,
-  chatInput: '¿Qué debo hacer si tengo fiebre y vivo cerca de una zona de riesgo?',
+  chatInput: '',
   messages: [
-    ['user', '¿Qué debo hacer si tengo fiebre y vivo cerca de una zona de riesgo?'],
-    ['bot', 'Quédate en casa, evita contacto estrecho y vigila señales de alarma. Si aparece dificultad respiratoria, dolor en pecho, confusión o fiebre persistente, contacta con un centro sanitario.']
+    ['bot', 'Hola. Puedo orientarte sobre alertas cercanas, síntomas, prevención, centros de salud y protocolos laborales. Cuéntame qué necesitas.']
   ],
-  aiStatus: 'Modo demo hasta añadir OPENAI_API_KEY'
+  aiStatus: 'Asistente disponible'
 };
 
 const root = document.getElementById('root');
@@ -408,22 +407,25 @@ function aiPage() {
   return `
     <section class="two-column ai-layout">
       <div class="panel chat-panel">
-        <div class="ai-title">${icon('bot')}<div><span>Asistente IA entrenado por temas</span><strong>Respuestas ciudadanas claras y responsables</strong></div></div>
-        <div class="topics">${data.aiTopics.map((topic) => `<span>${topic}</span>`).join('')}</div>
+        <div class="ai-title">${icon('bot')}<div><span>Asistente ciudadano</span><strong>Respuestas claras para actuar sin perder tiempo</strong></div></div>
+        <div class="quick-prompts">
+          <button data-prompt="Tengo fiebre y estoy en una zona de riesgo">Tengo fiebre</button>
+          <button data-prompt="¿Cuándo debo acudir a urgencias?">Urgencias</button>
+          <button data-prompt="¿Qué medidas debo tomar en el trabajo?">Trabajo</button>
+        </div>
         <div class="chat">${state.messages.map(([role, text]) => `<div class="bubble ${role}">${escapeHtml(text)}</div>`).join('')}</div>
-        <label class="composer"><input value="${escapeHtml(state.chatInput)}" aria-label="Pregunta para el asistente" /><button data-send>${icon('arrow')}Enviar</button></label>
+        <label class="composer"><input value="${escapeHtml(state.chatInput)}" placeholder="Escribe tu pregunta" aria-label="Pregunta para el asistente" /><button data-send>${icon('arrow')}Enviar</button></label>
         <p class="ai-status">${escapeHtml(state.aiStatus)}</p>
       </div>
       <aside class="panel integration-panel">
-        <span class="badge">OpenAI Platform</span>
-        <h3>Conexión IA real</h3>
-        <p>La clave se guarda en un archivo local <strong>.env</strong> y el navegador habla con el backend. Así la API key no queda expuesta en la web.</p>
-        <a class="external-link" href="https://platform.openai.com/home" target="_blank" rel="noreferrer">Abrir OpenAI Platform ${icon('external')}</a>
+        <span class="badge">Uso responsable</span>
+        <h3>Orientación, no diagnóstico</h3>
+        <p>El asistente ayuda a entender pasos preventivos y señales de alarma. No sustituye a un profesional sanitario.</p>
         <div class="setup-steps">
-          <article><strong>1</strong><span>Entra en OpenAI Platform y crea una API key.</span></article>
-          <article><strong>2</strong><span>Crea un archivo .env copiando .env.example.</span></article>
-          <article><strong>3</strong><span>Pega la clave en OPENAI_API_KEY.</span></article>
-          <article><strong>4</strong><span>Reinicia la web y el asistente usará OpenAI.</span></article>
+          <article><strong>1</strong><span>Busca ayuda urgente si hay dificultad respiratoria, dolor en pecho o confusión.</span></article>
+          <article><strong>2</strong><span>Ten a mano edad, síntomas, duración, medicación y contactos de riesgo.</span></article>
+          <article><strong>3</strong><span>Consulta fuentes oficiales antes de tomar decisiones importantes.</span></article>
+          <article><strong>4</strong><span>Evita compartir datos personales innecesarios.</span></article>
         </div>
       </aside>
     </section>
@@ -483,6 +485,10 @@ function bindEvents() {
   if (input) input.addEventListener('input', (event) => {
     state.chatInput = event.target.value;
   });
+  document.querySelectorAll('[data-prompt]').forEach((item) => item.addEventListener('click', () => {
+    state.chatInput = item.dataset.prompt;
+    render();
+  }));
   const send = document.querySelector('[data-send]');
   if (send) send.addEventListener('click', sendMessage);
 }
@@ -512,6 +518,7 @@ function initMap() {
   if (state.userLocation) {
     L.marker(state.userLocation).addTo(mapInstance).bindPopup('Tu ubicación aproximada');
   }
+  setTimeout(() => mapInstance?.invalidateSize(), 150);
 }
 
 function requestLocation() {
@@ -558,10 +565,10 @@ async function sendMessage() {
     });
     const result = await response.json();
     state.messages[state.messages.length - 1] = ['bot', result.answer || buildAiAnswer(prompt)];
-    state.aiStatus = result.mode === 'openai' ? 'Conectado a OpenAI' : 'Modo demo: añade OPENAI_API_KEY para IA real';
+    state.aiStatus = result.mode === 'openai' ? 'Respuesta generada' : 'Respuesta orientativa';
   } catch {
     state.messages[state.messages.length - 1] = ['bot', buildAiAnswer(prompt)];
-    state.aiStatus = 'Modo demo: no se pudo llamar al backend';
+    state.aiStatus = 'Respuesta orientativa';
   }
   render();
 }
